@@ -59,6 +59,8 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
 .sum-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
 .sum-txt{font-size:13px;color:#777;line-height:1.4;}
 .sum-txt strong{color:#111;font-weight:600;display:block;font-size:14px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.mic-active{background:rgba(239,38,142,0.09)!important;border-color:var(--pink)!important;color:var(--pink-dark)!important;font-weight:600!important;}
 </style>
 </head>
 <body>
@@ -151,7 +153,16 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
         </div>
       </div>
       <div class="field">
-        <label>Notes</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label style="margin-bottom:0;">Notes</label>
+          <button id="micBtn" onclick="toggleRecording()" style="display:flex;align-items:center;gap:5px;background:none;border:0.5px solid #ddd;border-radius:20px;padding:5px 11px;font-size:12px;color:#888;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+            <span id="micIcon">🎙</span><span id="micLabel">Record</span>
+          </button>
+        </div>
+        <div id="recStatus" style="display:none;align-items:center;gap:8px;background:rgba(239,38,142,0.07);border:0.5px solid var(--pink);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
+          <span id="recDot" style="width:8px;height:8px;border-radius:50%;background:var(--pink);display:inline-block;animation:pulse 1s infinite;"></span>
+          <span style="font-size:12px;color:var(--pink-dark);font-weight:600;">Recording… <span id="recTimer">0:00</span></span>
+        </div>
         <textarea id="nt" rows="4" placeholder=""></textarea>
       </div>
       <div style="margin-top:8px;">
@@ -252,6 +263,13 @@ function resetForm() {
   ['fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('co').value = '';
   document.getElementById('lt').value = '';
+  const ap = document.getElementById('audioPlayback'); if(ap) ap.remove();
+  if(mediaRecorder && mediaRecorder.state==='recording'){mediaRecorder.stop();}
+  document.getElementById('micBtn').classList.remove('mic-active');
+  document.getElementById('micIcon').textContent='🎙';
+  document.getElementById('micLabel').textContent='Record';
+  document.getElementById('recStatus').style.display='none';
+  clearInterval(recInterval); recSeconds=0;
   document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.drop-btn').forEach(b => b.classList.remove('lit'));
   const btn = document.getElementById('submitBtn');
@@ -264,6 +282,75 @@ function resetForm() {
   document.getElementById('lbl0').classList.add('active');
   document.getElementById('prog').style.width = '33.33%';
 }
+
+// Voice recording
+let mediaRecorder = null, recChunks = [], recInterval = null, recSeconds = 0;
+
+function toggleRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recChunks = [];
+    recSeconds = 0;
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(recChunks, { type: 'audio/webm' });
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(recInterval);
+
+      // Transcribe via Web Speech API fallback display or show audio player
+      const url = URL.createObjectURL(blob);
+      const existing = document.getElementById('audioPlayback');
+      if (existing) existing.remove();
+      const audio = document.createElement('audio');
+      audio.id = 'audioPlayback';
+      audio.controls = true;
+      audio.src = url;
+      audio.style.cssText = 'width:100%;margin-top:8px;border-radius:8px;';
+      document.getElementById('nt').after(audio);
+
+      // Reset mic button
+      document.getElementById('micBtn').classList.remove('mic-active');
+      document.getElementById('micIcon').textContent = '🎙';
+      document.getElementById('micLabel').textContent = 'Record';
+      document.getElementById('recStatus').style.display = 'none';
+    };
+
+    mediaRecorder.start();
+
+    // UI
+    document.getElementById('micBtn').classList.add('mic-active');
+    document.getElementById('micIcon').textContent = '⏹';
+    document.getElementById('micLabel').textContent = 'Stop';
+    document.getElementById('recStatus').style.display = 'flex';
+
+    recInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds / 60);
+      const s = recSeconds % 60;
+      document.getElementById('recTimer').textContent = m + ':' + String(s).padStart(2,'0');
+    }, 1000);
+
+  } catch(e) {
+    alert('Microphone access denied. Please allow microphone permissions and try again.');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+}
+
 </script>
 </body>
 </html>
