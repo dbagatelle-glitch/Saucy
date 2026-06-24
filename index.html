@@ -61,6 +61,7 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
 .sum-txt strong{color:#111;font-weight:600;display:block;font-size:14px;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .mic-active{background:rgba(239,38,142,0.09)!important;border-color:var(--pink)!important;color:var(--pink-dark)!important;font-weight:600!important;}
+.mic-listening{background:rgba(239,38,142,0.09)!important;border-color:var(--pink)!important;color:var(--pink-dark)!important;}
 </style>
 </head>
 <body>
@@ -159,9 +160,12 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
             <span id="micIcon">🎙</span><span id="micLabel">Record</span>
           </button>
         </div>
-        <div id="recStatus" style="display:none;align-items:center;gap:8px;background:rgba(239,38,142,0.07);border:0.5px solid var(--pink);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
-          <span id="recDot" style="width:8px;height:8px;border-radius:50%;background:var(--pink);display:inline-block;animation:pulse 1s infinite;"></span>
-          <span style="font-size:12px;color:var(--pink-dark);font-weight:600;">Recording… <span id="recTimer">0:00</span></span>
+        <div id="recStatus" style="display:none;flex-direction:column;gap:6px;background:rgba(239,38,142,0.07);border:0.5px solid var(--pink);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="recDot" style="width:8px;height:8px;border-radius:50%;background:var(--pink);display:inline-block;animation:pulse 1s infinite;flex-shrink:0;"></span>
+            <span style="font-size:12px;color:var(--pink-dark);font-weight:600;" id="recTimer">Listening…</span>
+          </div>
+          <span id="interimText" style="font-size:12px;color:#aaa;font-style:italic;min-height:16px;line-height:1.4;"></span>
         </div>
         <textarea id="nt" rows="4" placeholder=""></textarea>
       </div>
@@ -186,7 +190,7 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
 </div>
 
 <script>
-const SHEET_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyq-uMwM_f2aWhr3mj7sDK_iWlcRZgGIhL3piaulDoHOh774GKkGwPfS3tlKF5ExFrD_Q/exec';
 let cur = 0, rating = 0;
 
 (function(){
@@ -244,7 +248,7 @@ async function submitLead() {
   document.getElementById('prog').style.width = '100%';
   document.getElementById('lbl2').classList.remove('active');
   const statusEl = document.getElementById('sheetStatus');
-  if (SHEET_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+  if (SHEET_URL === 'https://script.google.com/macros/s/AKfycbyq-uMwM_f2aWhr3mj7sDK_iWlcRZgGIhL3piaulDoHOh774GKkGwPfS3tlKF5ExFrD_Q/exec') {
     statusEl.className = 'sheet-status warn';
     statusEl.textContent = 'Paste your Apps Script URL into the code to enable Sheets sync.';
     return;
@@ -263,13 +267,7 @@ function resetForm() {
   ['fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('co').value = '';
   document.getElementById('lt').value = '';
-  const ap = document.getElementById('audioPlayback'); if(ap) ap.remove();
-  if(mediaRecorder && mediaRecorder.state==='recording'){mediaRecorder.stop();}
-  document.getElementById('micBtn').classList.remove('mic-active');
-  document.getElementById('micIcon').textContent='🎙';
-  document.getElementById('micLabel').textContent='Record';
-  document.getElementById('recStatus').style.display='none';
-  clearInterval(recInterval); recSeconds=0;
+  resetMicUI();
   document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.drop-btn').forEach(b => b.classList.remove('lit'));
   const btn = document.getElementById('submitBtn');
@@ -283,72 +281,89 @@ function resetForm() {
   document.getElementById('prog').style.width = '33.33%';
 }
 
-// Voice recording
-let mediaRecorder = null, recChunks = [], recInterval = null, recSeconds = 0;
+
+
+// Speech-to-text via Web Speech API
+let recognition = null;
+let isListening = false;
 
 function toggleRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    stopRecording();
+  if (isListening) {
+    stopSpeech();
   } else {
-    startRecording();
+    startSpeech();
   }
 }
 
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    recChunks = [];
-    recSeconds = 0;
+function startSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Speech recognition is not supported in this browser. Please try Chrome or Safari.');
+    return;
+  }
 
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
-    mediaRecorder.onstop = async () => {
-      const blob = new Blob(recChunks, { type: 'audio/webm' });
-      stream.getTracks().forEach(t => t.stop());
-      clearInterval(recInterval);
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = true;
+  recognition.interimResults = true;
 
-      // Transcribe via Web Speech API fallback display or show audio player
-      const url = URL.createObjectURL(blob);
-      const existing = document.getElementById('audioPlayback');
-      if (existing) existing.remove();
-      const audio = document.createElement('audio');
-      audio.id = 'audioPlayback';
-      audio.controls = true;
-      audio.src = url;
-      audio.style.cssText = 'width:100%;margin-top:8px;border-radius:8px;';
-      document.getElementById('nt').after(audio);
+  const textarea = document.getElementById('nt');
+  const existingText = textarea.value;
 
-      // Reset mic button
-      document.getElementById('micBtn').classList.remove('mic-active');
-      document.getElementById('micIcon').textContent = '🎙';
-      document.getElementById('micLabel').textContent = 'Record';
-      document.getElementById('recStatus').style.display = 'none';
-    };
-
-    mediaRecorder.start();
-
-    // UI
+  recognition.onstart = () => {
+    isListening = true;
     document.getElementById('micBtn').classList.add('mic-active');
     document.getElementById('micIcon').textContent = '⏹';
     document.getElementById('micLabel').textContent = 'Stop';
     document.getElementById('recStatus').style.display = 'flex';
+    document.getElementById('recTimer').textContent = 'Listening…';
+  };
 
-    recInterval = setInterval(() => {
-      recSeconds++;
-      const m = Math.floor(recSeconds / 60);
-      const s = recSeconds % 60;
-      document.getElementById('recTimer').textContent = m + ':' + String(s).padStart(2,'0');
-    }, 1000);
+  let interim = '';
+  recognition.onresult = (e) => {
+    interim = '';
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        final += e.results[i][0].transcript;
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    if (final) {
+      const prefix = existingText && !existingText.endsWith(' ') && !existingText.endsWith('\n') ? ' ' : '';
+      textarea.value = existingText + prefix + final;
+    }
+    document.getElementById('interimText').textContent = interim;
+  };
 
-  } catch(e) {
-    alert('Microphone access denied. Please allow microphone permissions and try again.');
-  }
+  recognition.onerror = (e) => {
+    if (e.error !== 'aborted') {
+      alert('Mic error: ' + e.error + '. Please allow microphone access.');
+    }
+    resetMicUI();
+  };
+
+  recognition.onend = () => {
+    resetMicUI();
+  };
+
+  recognition.start();
 }
 
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-  }
+function stopSpeech() {
+  if (recognition) recognition.stop();
+  resetMicUI();
+}
+
+function resetMicUI() {
+  isListening = false;
+  recognition = null;
+  document.getElementById('micBtn').classList.remove('mic-active');
+  document.getElementById('micIcon').textContent = '🎙';
+  document.getElementById('micLabel').textContent = 'Record';
+  document.getElementById('recStatus').style.display = 'none';
+  document.getElementById('interimText').textContent = '';
 }
 
 </script>
