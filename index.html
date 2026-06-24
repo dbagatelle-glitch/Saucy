@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Saucy by KFC – Ambassador Intake</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height:100vh;display:flex;justify-content:center;}
+:root{--pink:#EF268E;--pink-dark:#B8106A;--pink-light:#F050A0;}
+.app{width:100%;max-width:420px;background:#fff;min-height:100vh;}
+.header{background:#EF268E;padding-bottom:18px;}
+.drips{display:flex;justify-content:space-around;align-items:flex-start;padding:0 10px;height:26px;}
+.drip{background:var(--pink-light);border-radius:0 0 6px 6px;width:7px;}
+.logo-block{text-align:center;padding:12px 20px 6px;}
+.logo-block img{width:160px;height:auto;display:block;margin:0 auto;}
+.tagline{font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:0.08em;text-transform:uppercase;margin-top:6px;text-align:center;}
+.progress-wrap{padding:12px 20px 0;}
+.prog-track{background:rgba(255,255,255,0.25);height:4px;border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:#fff;border-radius:2px;width:33.33%;transition:width 0.35s ease;}
+.step-labels{display:flex;justify-content:space-between;margin-top:7px;}
+.step-labels span{font-size:11px;color:rgba(255,255,255,0.45);transition:color 0.2s;}
+.step-labels span.active{color:#fff;font-weight:600;}
+.body{padding:22px 20px 28px;}
+.step{display:none;}
+.step.active{display:block;}
+.step-head{font-size:16px;font-weight:600;color:#111;margin-bottom:4px;}
+.step-sub{font-size:13px;color:#888;line-height:1.5;margin-bottom:18px;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;font-size:15px;font-family:inherit;border:0.5px solid #ddd;border-radius:8px;background:#fff;color:#111;outline:none;transition:border-color 0.15s,box-shadow 0.15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(239,38,142,0.12);}
+.field textarea{resize:none;line-height:1.5;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.drops{display:flex;gap:6px;margin-top:2px;}
+.drop-btn{background:none;border:none;cursor:pointer;font-size:28px;color:#ddd;padding:2px;line-height:1;transition:color 0.1s,transform 0.1s;}
+.drop-btn.lit{color:var(--pink);}
+.drop-btn:active{transform:scale(1.2);}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;}
+.tag{background:#f5f5f5;border:0.5px solid #e0e0e0;border-radius:20px;padding:6px 13px;font-size:13px;color:#666;cursor:pointer;transition:all 0.12s;font-family:inherit;}
+.tag.on{background:rgba(239,38,142,0.09);border-color:var(--pink);color:var(--pink-dark);font-weight:600;}
+.btn-p{width:100%;padding:13px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:9px;font-family:inherit;transition:background 0.15s,transform 0.1s;}
+.btn-p:hover{background:var(--pink-dark);}
+.btn-p:active{transform:scale(0.98);}
+.btn-p:disabled{background:#F4C0D1;cursor:not-allowed;}
+.btn-s{width:100%;padding:12px;background:transparent;color:#888;border:0.5px solid #ddd;border-radius:8px;font-size:15px;cursor:pointer;font-family:inherit;transition:background 0.12s;}
+.btn-s:hover{background:#f5f5f5;}
+.done-screen{display:none;flex-direction:column;align-items:center;gap:14px;text-align:center;padding-top:8px;}
+.done-screen.active{display:flex;}
+.done-icon{width:68px;height:68px;border-radius:50%;background:rgba(239,38,142,0.1);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--pink);}
+.done-title{font-size:20px;font-weight:600;color:#111;}
+.done-sub{font-size:14px;color:#888;line-height:1.6;max-width:270px;}
+.sheet-status{font-size:13px;padding:10px 14px;border-radius:8px;border:0.5px solid #ddd;background:#f9f9f9;color:#888;width:100%;text-align:center;}
+.sheet-status.ok{border-color:var(--pink);background:rgba(239,38,142,0.07);color:var(--pink-dark);}
+.sheet-status.warn{border-color:#f5a623;background:#fffbf0;color:#a0600a;font-size:12px;line-height:1.5;}
+.sheet-status.err{border-color:#e24b4a;background:#fdf0f0;color:#a32d2d;}
+.sum-card{width:100%;background:#f8f8f8;border-radius:12px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:9px;}
+.sum-row{display:flex;gap:9px;align-items:flex-start;}
+.sum-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.sum-txt{font-size:13px;color:#777;line-height:1.4;}
+.sum-txt strong{color:#111;font-weight:600;display:block;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="drips" id="drips"></div>
+    <div class="logo-block">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQoAAACUCAMAAABcDpd8AAAAolBMVEXvJo7y8vL18/T8+/n+/v7z8/H7+/v58/Py8PH59/juJpD58/XvIIzuAIb8///sKI788fXtAIH1/vn1+fbww9btQpntT57tn8ftOpb8//r55u/y6O3tjLvxnsXtYqbrt9LverLtaanysdD12ubsWKDtlsH11OTsgbjts8rsy93xrdLugbC9v8DS2djywNmampu+x8Pk2uDyc63tc7XrocDrNIyaZ58MAAASNUlEQVR4nO1dC3ujOLI1DwGCEmAEDq/Y5mE7tne9N+nM//9rt0oC7HT3zM7ut7Ez05yZ/hLTNkZHVaceEvRi8VdAdAq7Hh59FX8a8ImXCrDK/0JMLKLPJePzzv0/BuTPl0P017neTwScbbtaz1SQe6S2be9mKpCKLEYq2kdfxlcArOwwtNPZKoiK0P7HPy/+o6/jC4Co+Nf/nWYqKJaWxT9fm9lBEPBk891ipmJBZvHWRBA9+jK+BED8hXLjGTP+Bpg9bgQ0c3DWgFUZv4lHX8WXgKidsF0++iq+BMTJti+zVRDEs2OfZioIWNbwv1Bv91MB+dwrHTHnFTNmzJgxY8aMGTNmzJgxY8aMGTNmzJgxY8aMGb8qQBDm5SIkImp2T0+H/JcnA347VTzA/6pN9ksvs4NfV04QxHEcBE6w/ZJcwIA/+3YB/9U+T7+OA9clJuiP8wX3J6H/9k3TrPvsOwcWvv/jgEH4fbPdvq2z/5QMaNAaXDcgo0C45eqL6QXAerfZl4gufW5uhgfi0LbP399FBYu3dl+ilXfp+7f/jAxIQ845cqGAfLQfPg4PDiwgVm2HOhZw02WSl20/XY7YVZbDu4N/e32QtaWDw3FdbjlluxLXE8G/GQnkYeg4nFhwiY/Y7bKbD4ho+/T8wLtRAc4l5+S6rmuapmsa3XmYarEuacg8Pt9ug89b7pKV67e7+2bgArLTPt39YVSAHpkI7QDFgtNJ4qC6UU6x3aOQ7B/HBdROSO7rMneAae40F6INTHot4+xKBbzh9QaKC6IiCPbrYTStDE2vPH9nGED6Ov6uqAjJLBxuUiCp6pEKEM8xdxkzto+iQmztwnG5E5RdHAcDGeHOp7GLS6xHLPfT5UHeWu6VCqTKuqi9Z5DtQ9sOePh+vdOIQlK+btaZP8QmwLfYRIXN9SniiYpoEyDxgfWw+7Uh57ZluRxDvMjakQrXVlYvLsFwJJzsGLIjyZ5pTu91g4Oiou8s23ZMzs/DWAD81akMEx6G5WmtdqjBpeBKLDiegM5QHcTw3ifHNV3Ouzd40B4ucQpth/NiJ6IIoKVZVj5SkVKKOlbzjpfYTVSs9hzHoAeircNqaZiw7izUAZuHqd6hCNC3IXoDGpvNnXDT4wCh9yyiwsY4YtMZykFp4FDhK6trUWui5vDtAVxATFRYQQYRcrEqmaGR7JZkAR2+Nk3DCJxJHDUVo0FQKLDU2EVTSobmbw8mDnldWigN+GZuM9MOyy16jr8LHOQC827HRuvinU4s6KwxjzcUvKLF7ri5/35oyGykIuCuviJxwZEbpmcYslIe8iQZkeOZMh2pyFPpuR5jZD8emrkZcCUW8FY6holK4LTqZdZyK6Zhux63DYZqWaEgotQQF/ghByUjDvZaZxYtMlHWPviIKOsfkHmJBqcRDdbSaZSoGVJhkCU4dAT8ihnaULx+dJF3iUrheV7gagMyE+0gb7HjebZz2WaKsQtOe0DCQNJjMvQLi3JLWF2QCnQsdCV0nVTJgmhQPfaNIgIV9icJ7h2o+BZqKjZqoLDycOQ4TMNkSs/ELjH1gNm4WxvOQaytISDXwT/mmWKG2MahaYSt1jzYhDT3JsXO0LLRXBzbUd+C8oqBJuA2BRGujA3EPrAwn/Dp17yPHlKYiLWyCu7KWnnn8igNxtBBDKmoAAhNzQUrh7yQIgVOtIFUMPQe07RS9TdEhROWWLRE5FkJjR2tJDyuVmmoqLB5QuYj3mJkwUSj8Ty20YSHVqeyVvSfyg1Qw+9PBUTKKjhnyYFCv1gxSnMYasWQZVWu4gIP7QatX7xIpAJJGKiodPAU2wCp0GmCaEKDzIF7zssSU6xOonkgGTomL3chGiK30cuUBEHmyNeepgLWVUKaXT/CLkSnrcJkyabHYS7rSkqG/w+JhKiUE6BHyOOwi1/UHhoF6SYjaNHEwweP8VCroF8ZBupx6LCOlFB8SzCJo+RKmZq/xKIswATE88wuR2nYS5V/+xhqEzxmMP6IbfJip63CNJksn1cQiW1aVuXxMNgoSKQCxQO5GMsFaEoyB8NV5sPGw2JboWspN1OBB60CT43z6/sL8cooetphP2QcMRaoNjc9himW/y7lE74NTbST9F2MycMDzAKimKigFBqr0uMBLyhvts1YVKGl8xHyRReokJOgKKdBKvhlmEE444FOmXmOXKE4oL84FBV9ch4HgxIqiT7tcotq4XDk1+ye2iBB26F3nSSjchBPe/c7akgO0CwGKtBiZXASvmpmDXXEch9aCDJupyiHxgW8SGuE444pOdQ4hJSoEM9kNBwDKY595KmTSdJNnQ+4hOgIZGzMC1ii3WNVMV3XGOxy3xRLiDwTws+PoTlQYXqO097OB+SBGi9SgT+K4fEvYudZljqCx8oxByAqpIqW/pGZKjcxbvP1t8P22ptAVWDqOzGd8+RRDKdlyhPRQLt7UuFTTczjwxKz7YJro/A8bn5w0+VTYRVJQWzQsI96LNBXhcUdTcVpvGh/x1iCPk8ZOEVfThH5eO3rqMbpZBVRW1i2SsEdK3zTursh0bIUQeUdqQDoqF6ww5MQfVkMRoFUMO96uxdEVWjVKxy4ooIlKpfC8eyLyUO+jYP10S0SCrjLd5Wso3848jtDv+l69KV0lMHxotNqI1JL04uE3JMKcQkdzUUPAmtKZRVEhxm8TzMparcoRZbaVlEoKtLhol8mJvjNPEtNBUoJpSHIhCF/995KzKUk5uSWxEjyPPhdirbG6ZymvCMV0NsjNsIX/VEqGvCPIfejWQCkRdEu88tAhSUdHQzFDj1DUzFdMxYdhUV5A2RHFZ2x5uDO/sOQbksLjL34NstBBX4bqHgpqHOCx1Bu70eFaCcqOgojq71UYYSj9FVjPS7esMpGcUe31lbBQi2qYh0MRlGkExUZTmpItSfWGESFEpjqtrsXrW8an7A6qjgti7gf1djiyizs8J5ULLuJipi0UPSBRa0J1ArmjWkvEAeHpY8/tBGwItC9qKi0CrxmKYvNFCL6DoWwAVLNYqAC3/HbzUpC3U0tYXV2h1TBKoaWBX6Qh7ZlcqJif0cqyisVve5MhCqMYUw3nsQ4OLsoqnQfj8LALJ05L8RxcJniZaKiCQoe9pROxeTzqBVIVnHb0H6x7HJ9I0SelJYkKnQSQyJto1kSFUpuB5H1F59anN1QoRcusS4zVP5tMv48UPFcTJIwUmGXQwowHL+hosZDYaapoOYMV1O+uaUChbqbhkXWozOTsU8jUizgDEWFyjbv82Cq5WaiwjmpcgPLhIEK9j70LjpNRVFcqXBsNa2wDiWN1CrGaEmJgrTC6EqFo7KE+BqakQrMIp4n7tZl6FA0DceHXIgtUoEpqyPDm+TmswkRW9saudAPixN7Q1Ua6CK6GlfTzKv98bKvRq0gnVRULEwpHcoCRqeGrAtlEfgktpSAcVMtCHJrd/WIFzxcdFN8IipUudoOi28ALORUCDOZwciB/9lUYG04mUWpxAJKQ9m0yaq3cVnDsjYZLWOuj8VgFRjtVItleaQmPr6Mh5H6b5iIF7RcItblSAWSYU1DX/gpnaMaF89Vq0cVN7wRetzLS6GLPI/q2Xs9uI2K89FD2kjA8pulqfCMvUqv4Ww7cqN7ayLrKOxJRj6hHs4h6lClhZYz1hUbPBC2EOlQ4igqaGHAOsHY/SpVTjaaiXhH5yAqUDh/0+Uf9AUzqW9E+frdqFj41LNRsIN2nX3rJIVSsopWlYmLsnCqwYsjUUsSEXIhR6kcZNJhlKA6OvJChqxYtlrOyY+YWzmjVdhxrbjw4Uml75Mor/b0NlXoFWNSCvsCQ7pOWj83btwC1kGoqXBCp+wqaTJFBatUxiN2iSE3k19n0tQ9XZOoAhVO1aIA36tRLC8JmkhFvW7UhHCiAgkK4+eIdqGdY/V9XIdqiN5Nrr+eokg9doUcaXgsySC653MN/YMzcoEZAM64QSHEkpulajyTy9Zj2wLyoaRWBTQFETgknqLG2y4Blk1BCz+tmkix46rk1HCcgpdtvUs9XX4NVgFbV3KKH5bDGK1PD0bwnjAq2n9GxCeSA7Wldct2zCAINBW27j8sL5LJ12akQmzlRIWRUDcLck8qKlh1gKhG78Hq4W1Y6XqVVNBoKtALMRxjriZp3FbIlQFgwCkYqo/E46of9j40EKNNkhg3e1uiaPSTTzUTsS3tUFOhKjG8eCuIaHkKtcFzZZqP0iWOxpUK5mGl4UOdkIPgS+nKAtOBYemUOiEXqfsf2iocXXoz/avON+HFttAYpOoJUmOjG9uCYl3fLo1F0ZWMT+Uiu8TUi1DBHAXT4fsV2SY0FfNc4x2GqYDeUwuIKgEzjOSYgY8FKPNoVcg0JfPwFNa0R0Q01ZWKiQtNRaHqXuhDNAeMzUikooKNMRYoePt3SjRvAaJJyzAsLHSHQgbds9JJ0e/dYb1fX5I44ZCZobdT0I6bWvFV6t1l9FdYclTXLSKila6OR0SFpeWIVBLDhZIKLIwtpEJao1WwYIxE5/rQgBaOO/MhoNm16b7rumOLlonigCa6d2jbES2I63Cf7dXWK2rMUkc6MPXUbjtaPUUusLIvuu21GwG5Ds1IHOe6V6VCChpFqcmuCrWGYo5UGIaiCPqjIY3q2jy6Lx8gIFut133mC/CJCRwhM5hrpNFwIWqFQy2G6B0G6NqN2g+y3niSkg2ZFJsPe2XEGkVVFTTm0AN1LINjVAnPgmZcuIVeT2IDF2yg4kgiKpObWt6/i1Rc2bhuXo3gFKur87xpbqgVjSQoKjQhw0oe5OunY1l16XujV8WmXeywpUSF9MXVVKBKUlNmo8OkqOTAwuggjKiA3KFfeXLTdkfVfNCjk5dPajmM0qfDRyoUCxpGMq6f0gaVPNKtOhDRt6fTVu9ix2IrQSq4xa0rFXY6bv3DGHNrFBiV9BIisYdUfIVnrMEKB+CpBapyWrUQdfWRCi+53UU31hh5y5PESUwdU0XeMulwppRC+0h4mlK2daJWpEejMKVuWixT/Hopky/wL4lElG9TtoBzlk4zgzP8kQqk6ftPAjRdSD3BwEz0JgOU30sVFAVpJuZSlrf/dm10wjHBryDh0arJXgaPSyvPi+ufZpt3xvI0TJfJbhb2MTiyGyqYUf/wZGc4Vxg4DcrPWdIOGxLE6jntygpR7l/e4GaA0MQYQ8xBhQ1ZrYVP2QRK8QFd7H5V6e9DbBPqbiIT3s1RyDeYGI5ESO/9hzX/ZW1ghim5qSd6PX5QiKzZns9v62j5wf0BtiXFKbWiyKScGjzw7/ZG3w2w8HBIVBzWtztfINp16MOSHJnv6x+YwBqdNkyEifRMK5HJzSZ20GFl0h31gtaom02lE28pq/rDCb+ASRDEGQdrymQDHy4IYLV9vxy74+V5u/rxEfDiqTB5IrECbZp68/q7i2KwStvtru8xWALkzTtG4qpMdx9vLfgK3kHwoTlW1fHwQzCnuJnnGDh/tnsO1sx73WzV/mWIsvXqd7bYQeOeXtpNpfwBE7o8y1Z0yo/DjxZ37Nv8AWijYPTzu4X+4C4i4efTHsM/uNcI1mF1ybtUFRmU2o6nVFSMfHyg4rGc/Fe7Jv/cZ5qqTvN0+0MPV72cDt43134IsNi5pFuxW39kYnTG26NXMv6evPg+LDGo6sxcecZ4795QAP1MMv+eVBCGtlTk00+IRixUEoKl1w9ZhXr3I670kwH9MU0v+zU848/99pReUoVLI6DfvaTpy8v57zjunwDWgeRFmWGtkxjpqk0wwUqSMDH6qC1ZgjWvbH8VKhanxHTQBDq6JUJEiZFcMLOoqmwvE17neZvsvkCBfg9g6ZnI13yVFLS9XfQhk+8CRL07JczrMR/v91/whuRPAd2HJNOa8ctvtJfvKWHBLs9WIq9M9Ax/8RPZ/LsCmoSxSprVSmAIWR6Zwavu9SgO0pDnX8QcBkCNjlDRDmh1Zwj+FlSVd1nSCu35V7EHDdhIVtXUqnjCCmQlDSNtmreVqBMzef+1qBCVlMffnhOP7p2g5UhvtwSs2Fcc/aYWYvnLSMWySUyZZstSunK/WqaMeUPsfEqkaVQvm9eXL9Kt+GRgYsWYTGoBVYLYviZy+HeyAQ4lJVuJfP81xFM0NWFFrc263q3oxXZILoXoD/jqqz3a49OgHgKl1upVj1O9Gv4qullbmzFjxowZM2bMmDFjxowZM2bMmDFjxowZM2bMmDFjxow/jf8Hd9xeWM/HnC4AAAAASUVORK5CYII=" alt="Saucy by KFC"  />
+      <div class="tagline">Brand Ambassador · Lead Intake</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="prog-track"><div class="prog-fill" id="prog"></div></div>
+      <div class="step-labels">
+        <span id="lbl0" class="active">Contact</span>
+        <span id="lbl1">Address</span>
+        <span id="lbl2">Notes</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="step active" id="s0">
+      <div class="step-head">Who are you talking to?</div>
+      <div class="step-sub">Enter the lead's contact details.</div>
+      <div class="field-row">
+        <div class="field"><label>First name</label><input type="text" id="fn" placeholder="Maya"></div>
+        <div class="field"><label>Last name</label><input type="text" id="ln" placeholder="Chen"></div>
+      </div>
+      <div class="field"><label>Phone</label><input type="tel" id="ph" placeholder="+1 (555) 000-0000"></div>
+      <div class="field"><label>Email</label><input type="email" id="em" placeholder="maya@example.com"></div>
+      <div class="field">
+        <label>Lead type</label>
+        <select id="lt">
+          <option value="">Select type…</option>
+          <option>Restaurant / Food service</option>
+          <option>Retail / Grocery</option>
+          <option>Event / Festival</option>
+          <option>Corporate / Office</option>
+          <option>Influencer / Creator</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn-p" onclick="go(1)">Continue →</button>
+      </div>
+    </div>
+
+    <div class="step" id="s1">
+      <div class="step-head">Where are they located?</div>
+      <div class="step-sub">Physical address of the contact or business.</div>
+      <div class="field"><label>Street address</label><input type="text" id="st" placeholder="123 Main Street"></div>
+      <div class="field"><label>Suite / Unit</label><input type="text" id="un" placeholder="Apt 4B (optional)"></div>
+      <div class="field-row">
+        <div class="field"><label>City</label><input type="text" id="ci" placeholder="Nashville"></div>
+        <div class="field"><label>State</label><input type="text" id="sa" placeholder="TN"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>ZIP</label><input type="text" id="zp" placeholder="37201"></div>
+        <div class="field"><label>Country</label><input type="text" id="co" value="US"></div>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn-p" onclick="go(2)">Continue →</button>
+        <button class="btn-s" onclick="go(0)">← Back</button>
+      </div>
+    </div>
+
+    <div class="step" id="s2">
+      <div class="step-head">Notes & feedback</div>
+      <div class="step-sub">Rate the lead and share field observations.</div>
+      <div class="field">
+        <label>Lead heat</label>
+        <div class="drops">
+          <button class="drop-btn" onclick="setRating(1)">●</button>
+          <button class="drop-btn" onclick="setRating(2)">●</button>
+          <button class="drop-btn" onclick="setRating(3)">●</button>
+          <button class="drop-btn" onclick="setRating(4)">●</button>
+          <button class="drop-btn" onclick="setRating(5)">●</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Topics discussed</label>
+        <div class="tags">
+          <button class="tag" onclick="togTag(this)">Sauce lineup</button>
+          <button class="tag" onclick="togTag(this)">Pricing</button>
+          <button class="tag" onclick="togTag(this)">Partnership</button>
+          <button class="tag" onclick="togTag(this)">Sampling</button>
+          <button class="tag" onclick="togTag(this)">Social media</button>
+          <button class="tag" onclick="togTag(this)">Event collab</button>
+          <button class="tag" onclick="togTag(this)">Follow-up needed</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="nt" rows="4" placeholder="Key takeaways, objections, next steps…"></textarea>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn-p" id="submitBtn" onclick="submitLead()">Submit lead</button>
+        <button class="btn-s" onclick="go(1)">← Back</button>
+      </div>
+    </div>
+
+    <div class="done-screen" id="done">
+      <div class="done-icon">✓</div>
+      <div class="done-title">Lead captured!</div>
+      <div class="done-sub">Details saved. The Saucy team will follow up based on your field notes.</div>
+      <div class="sheet-status" id="sheetStatus">Syncing to Google Sheets…</div>
+      <div class="sum-card" id="sumCard"></div>
+      <button class="btn-p" onclick="resetForm()" style="margin-top:4px;">+ Add another lead</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+let cur = 0, rating = 0;
+
+(function(){
+  const heights = [22,14,30,10,26,16,20,12,28,8,22,18,24,11,19,20,15];
+  const bar = document.getElementById('drips');
+  heights.forEach(h => {
+    const d = document.createElement('div');
+    d.className = 'drip';
+    d.style.height = h + 'px';
+    bar.appendChild(d);
+  });
+})();
+
+function go(n) {
+  document.getElementById('s'+cur).classList.remove('active');
+  document.getElementById('lbl'+cur).classList.remove('active');
+  cur = n;
+  document.getElementById('s'+cur).classList.add('active');
+  document.getElementById('lbl'+cur).classList.add('active');
+  document.getElementById('prog').style.width = ((n+1)/3*100) + '%';
+}
+
+function setRating(n) {
+  rating = n;
+  document.querySelectorAll('.drop-btn').forEach((b,i) => b.classList.toggle('lit', i < n));
+}
+
+function togTag(el) { el.classList.toggle('on'); }
+function v(id) { return (document.getElementById(id)||{}).value || ''; }
+
+async function submitLead() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  const payload = {
+    timestamp: new Date().toLocaleString(),
+    firstName: v('fn'), lastName: v('ln'), phone: v('ph'),
+    email: v('em'), leadType: v('lt'),
+    street: v('st'), unit: v('un'), city: v('ci'),
+    state: v('sa'), zip: v('zp'), country: v('co'),
+    leadHeat: rating,
+    topics: [...document.querySelectorAll('.tag.on')].map(t=>t.textContent).join(', '),
+    notes: v('nt')
+  };
+  const addr = [payload.street,payload.city,payload.state,payload.zip,payload.country].filter(Boolean).join(', ') || '—';
+  const heatStr = rating ? '<span style="color:var(--pink)">●</span>'.repeat(rating) : '—';
+  document.getElementById('sumCard').innerHTML = `
+    <div class="sum-row"><span class="sum-icon" style="color:var(--pink)">●</span><div class="sum-txt"><strong>${payload.firstName} ${payload.lastName}</strong>${payload.email||'—'} · ${payload.phone||'—'}</div></div>
+    <div class="sum-row"><span class="sum-icon">📍</span><div class="sum-txt">${addr}</div></div>
+    <div class="sum-row"><span class="sum-icon" style="color:var(--pink)">●</span><div class="sum-txt"><strong>Lead heat</strong>${heatStr}</div></div>
+    ${payload.topics ? `<div class="sum-row"><span class="sum-icon">🏷</span><div class="sum-txt">${payload.topics}</div></div>` : ''}
+    ${payload.notes ? `<div class="sum-row"><span class="sum-icon">📝</span><div class="sum-txt">${payload.notes}</div></div>` : ''}
+  `;
+  document.getElementById('s2').classList.remove('active');
+  document.getElementById('done').classList.add('active');
+  document.getElementById('prog').style.width = '100%';
+  document.getElementById('lbl2').classList.remove('active');
+  const statusEl = document.getElementById('sheetStatus');
+  if (SHEET_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+    statusEl.className = 'sheet-status warn';
+    statusEl.textContent = 'Paste your Apps Script URL into the code to enable Sheets sync.';
+    return;
+  }
+  try {
+    await fetch(SHEET_URL, { method: 'POST', body: JSON.stringify(payload) });
+    statusEl.className = 'sheet-status ok';
+    statusEl.textContent = '✓ Synced to Google Sheets';
+  } catch {
+    statusEl.className = 'sheet-status err';
+    statusEl.textContent = 'Sheets sync failed — data captured locally.';
+  }
+}
+
+function resetForm() {
+  ['fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('co').value = 'US';
+  document.getElementById('lt').value = '';
+  document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.drop-btn').forEach(b => b.classList.remove('lit'));
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = false; btn.textContent = 'Submit lead';
+  rating = 0;
+  document.getElementById('done').classList.remove('active');
+  document.getElementById('lbl'+cur).classList.remove('active');
+  cur = 0;
+  document.getElementById('s0').classList.add('active');
+  document.getElementById('lbl0').classList.add('active');
+  document.getElementById('prog').style.width = '33.33%';
+}
+</script>
+</body>
+</html>
