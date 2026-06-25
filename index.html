@@ -272,7 +272,10 @@ async function submitLead() {
     ${payload.notes ? `<div class="sum-row"><span class="sum-icon">📝</span><div class="sum-txt">${payload.notes}</div></div>` : ''}
   `;
   document.getElementById('s1').classList.remove('active');
-  document.getElementById('done').classList.add('active');
+  const doneScreen = document.getElementById('done');
+  doneScreen.classList.add('active');
+  doneScreen.style.display = 'flex';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('prog').style.width = '100%';
   document.getElementById('lbl1').classList.remove('active');
   const statusEl = document.getElementById('sheetStatus');
@@ -300,12 +303,16 @@ function resetForm() {
   const btn = document.getElementById('submitBtn');
   btn.disabled = false; btn.textContent = 'Submit lead';
   rating = 0;
-  document.getElementById('done').classList.remove('active');
+  const doneEl = document.getElementById('done');
+  doneEl.classList.remove('active');
+  doneEl.style.display = 'none';
+  setTimeout(() => { doneEl.style.display = ''; }, 50);
   document.getElementById('lbl'+cur).classList.remove('active');
   cur = 0;
   document.getElementById('s0').classList.add('active');
   document.getElementById('lbl0').classList.add('active');
   document.getElementById('prog').style.width = '50%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
