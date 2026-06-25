@@ -86,6 +86,7 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
     <div class="step active" id="s0">
       <div class="step-head">Who are you talking to?</div>
       <div class="step-sub">Enter the lead's contact details.</div>
+      <div class="field"><label>Business name <span style="color:var(--pink)">*</span></label><input type="text" id="bn" placeholder="" required></div>
       <div class="field-row">
         <div class="field"><label>First name</label><input type="text" id="fn" placeholder=""></div>
         <div class="field"><label>Last name</label><input type="text" id="ln" placeholder=""></div>
@@ -93,19 +94,26 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
       <div class="field"><label>Phone</label><input type="tel" id="ph" placeholder=""></div>
       <div class="field"><label>Email</label><input type="email" id="em" placeholder=""></div>
       <div class="field">
-        <label>Lead type</label>
+        <label>Lead type <span style="color:var(--pink)">*</span></label>
         <select id="lt">
           <option value="">Select type…</option>
-          <option>Restaurant / Food service</option>
-          <option>Retail / Grocery</option>
-          <option>Event / Festival</option>
-          <option>Corporate / Office</option>
-          <option>Influencer / Creator</option>
+          <option>Retail</option>
+          <option>Corporate Office</option>
+          <option>Medical Office</option>
+          <option>Beauty - Hair, Nail, Other</option>
+          <option>Auto - Repair, Car Wash, etc.</option>
+          <option>Laundromat/Drycleaner</option>
+          <option>Residential Complex</option>
+          <option>K-12 Educational Facility</option>
+          <option>University Campus Establishment</option>
+          <option>Convenience Store</option>
+          <option>High Traffic Location</option>
+          <option>Event/Festival</option>
           <option>Other</option>
         </select>
       </div>
       <div style="margin-top:8px;">
-        <button class="btn-p" onclick="go(1)">Continue →</button>
+        <button class="btn-p" onclick="goStep1()">Continue →</button>
       </div>
     </div>
 
@@ -132,7 +140,7 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
       <div class="step-head">Notes & feedback</div>
       <div class="step-sub">Rate the lead and share field observations.</div>
       <div class="field">
-        <label>Lead heat</label>
+        <label>Lead heat <span style="color:var(--pink)">*</span></label>
         <div class="drops">
           <button class="drop-btn" onclick="setRating(1)">●</button>
           <button class="drop-btn" onclick="setRating(2)">●</button>
@@ -204,6 +212,29 @@ let cur = 0, rating = 0;
   });
 })();
 
+function goStep1() {
+  const bn = document.getElementById('bn').value.trim();
+  const lt = document.getElementById('lt').value;
+  if (!bn) {
+    const inp = document.getElementById('bn');
+    inp.style.borderColor = 'var(--pink)';
+    inp.style.boxShadow = '0 0 0 3px rgba(239,38,142,0.2)';
+    inp.focus();
+    inp.placeholder = 'Business name is required';
+    setTimeout(() => { inp.style.borderColor = ''; inp.style.boxShadow = ''; inp.placeholder = ''; }, 2500);
+    return;
+  }
+  if (!lt) {
+    const sel = document.getElementById('lt');
+    sel.style.borderColor = 'var(--pink)';
+    sel.style.boxShadow = '0 0 0 3px rgba(239,38,142,0.2)';
+    sel.focus();
+    setTimeout(() => { sel.style.borderColor = ''; sel.style.boxShadow = ''; }, 2500);
+    return;
+  }
+  go(1);
+}
+
 function go(n) {
   document.getElementById('s'+cur).classList.remove('active');
   document.getElementById('lbl'+cur).classList.remove('active');
@@ -222,10 +253,19 @@ function togTag(el) { el.classList.toggle('on'); }
 function v(id) { return (document.getElementById(id)||{}).value || ''; }
 
 async function submitLead() {
+  if (!rating) {
+    const drops = document.getElementById('drops');
+    drops.style.outline = '2px solid var(--pink)';
+    drops.style.borderRadius = '8px';
+    drops.style.padding = '4px';
+    setTimeout(() => { drops.style.outline = ''; drops.style.padding = ''; }, 2500);
+    return;
+  }
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'Submitting…';
   const payload = {
     timestamp: new Date().toLocaleString(),
+    businessName: v('bn'),
     firstName: v('fn'), lastName: v('ln'), phone: v('ph'),
     email: v('em'), leadType: v('lt'),
     street: v('st'), unit: v('un'), city: v('ci'),
@@ -237,6 +277,7 @@ async function submitLead() {
   const addr = [payload.street,payload.city,payload.state,payload.zip,payload.country].filter(Boolean).join(', ') || '—';
   const heatStr = rating ? '<span style="color:var(--pink)">●</span>'.repeat(rating) : '—';
   document.getElementById('sumCard').innerHTML = `
+    ${payload.businessName ? `<div class="sum-row"><span class="sum-icon">🏢</span><div class="sum-txt"><strong>${payload.businessName}</strong></div></div>` : ''}
     <div class="sum-row"><span class="sum-icon" style="color:var(--pink)">●</span><div class="sum-txt"><strong>${payload.firstName} ${payload.lastName}</strong>${payload.email||'—'} · ${payload.phone||'—'}</div></div>
     <div class="sum-row"><span class="sum-icon">📍</span><div class="sum-txt">${addr}</div></div>
     <div class="sum-row"><span class="sum-icon" style="color:var(--pink)">●</span><div class="sum-txt"><strong>Lead heat</strong>${heatStr}</div></div>
@@ -264,7 +305,7 @@ async function submitLead() {
 }
 
 function resetForm() {
-  ['fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['bn','fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('co').value = '';
   document.getElementById('lt').value = '';
   resetMicUI();
