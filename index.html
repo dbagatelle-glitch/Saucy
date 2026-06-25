@@ -293,7 +293,6 @@ async function submitLead() {
 
 function resetForm() {
   ['bn','fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  document.getElementById('co').value = '';
   document.getElementById('lt').value = '';
   resetMicUI();
   document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
