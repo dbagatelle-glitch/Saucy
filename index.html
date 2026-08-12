@@ -62,6 +62,11 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .mic-active{background:rgba(239,38,142,0.09)!important;border-color:var(--pink)!important;color:var(--pink-dark)!important;font-weight:600!important;}
 .mic-listening{background:rgba(239,38,142,0.09)!important;border-color:var(--pink)!important;color:var(--pink-dark)!important;}
+.flyer-count{margin-top:8px;display:flex;align-items:center;gap:8px;animation:fi 0.2s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.flyer-count label{font-size:12px;color:var(--pink-dark);font-weight:600;white-space:nowrap;}
+.flyer-count input{width:90px;padding:7px 10px;font-size:14px;font-family:inherit;border:0.5px solid var(--pink);border-radius:8px;outline:none;color:#111;background:#fff;}
+.flyer-count input:focus{box-shadow:0 0 0 3px rgba(239,38,142,0.12);}
 </style>
 </head>
 <body>
@@ -105,7 +110,7 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
           <option>Carrollwood</option>
           <option>West Tampa</option>
           <option>Westchase</option>
-          <option>Temple Terrace | UCF</option>
+          <option>Temple Terrace | USF</option>
           <option>Trinity</option>
           <option>Bradenton</option>
           <option>Naples</option>
@@ -117,13 +122,13 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
       <div class="step-head">Tell us about the business</div>
       <div class="step-sub">Enter business details, lead quality and notes.</div>
       <div class="field"><label>Business name <span style="color:var(--pink)">*</span></label><input type="text" id="bn" placeholder="" required></div>
-      <div class="field"><label>Street address</label><input type="text" id="st" placeholder=""></div>
-      <div class="field"><label>Suite / Unit</label><input type="text" id="un" placeholder=""></div>
-      <div class="field-row">
-        <div class="field"><label>City</label><input type="text" id="ci" placeholder=""></div>
-        <div class="field"><label>State</label><input type="text" id="sa" placeholder=""></div>
+      <div style="display:none;">
+        <input type="text" id="st">
+        <input type="text" id="un">
+        <input type="text" id="ci">
+        <input type="text" id="sa">
+        <input type="text" id="zp">
       </div>
-      <div class="field"><label>ZIP</label><input type="text" id="zp" placeholder=""></div>
       <div class="field">
         <label>Lead type <span style="color:var(--pink)">*</span></label>
         <select id="lt">
@@ -155,14 +160,30 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
       </div>
       <div class="field">
         <label>Topics discussed</label>
-        <div class="tags">
-          <button class="tag" onclick="togTag(this)">Sauce lineup</button>
-          <button class="tag" onclick="togTag(this)">Pricing</button>
-          <button class="tag" onclick="togTag(this)">Partnership</button>
-          <button class="tag" onclick="togTag(this)">Sampling</button>
-          <button class="tag" onclick="togTag(this)">Social media</button>
-          <button class="tag" onclick="togTag(this)">Event collab</button>
-          <button class="tag" onclick="togTag(this)">Follow-up needed</button>
+        <div class="tags" id="topicTags">
+          <button class="tag" onclick="togTag(this)">Brand Introduction</button>
+          <button class="tag" onclick="togTag(this)">Catering</button>
+          <button class="tag" onclick="togTag(this)">Fundraising</button>
+          <button class="tag" onclick="togTag(this)">Follow Up for More Information</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Type of Flyer Distributed</label>
+        <div class="tags" id="flyerTags">
+          <button class="tag" onclick="togFlyer(this,'hn')">Hey Neighbor</button>
+          <button class="tag" onclick="togFlyer(this,'cmo')">Catering Menu &amp; Offer Insert</button>
+          <button class="tag" onclick="togFlyer(this,'go')">Gatekeeper Offer</button>
+          <button class="tag" onclick="togFlyer(this,'bts')">Back to School Offer</button>
+          <button class="tag" onclick="togFlyer(this,'ff')">Fundraising Flyer</button>
+          <button class="tag" onclick="togFlyer(this,'fbc')">Fundraising Biz Card</button>
+        </div>
+        <div id="hn-count" class="flyer-count" style="display:none;">
+          <label>Hey Neighbor — How Many?</label>
+          <input type="number" id="hn-qty" min="0" placeholder="0">
+        </div>
+        <div id="bts-count" class="flyer-count" style="display:none;">
+          <label>Back to School — How Many?</label>
+          <input type="number" id="bts-qty" min="0" placeholder="0">
         </div>
       </div>
       <div class="field">
@@ -187,11 +208,11 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
     </div>
 
     <div class="step" id="s1">
-      <div class="step-head">Who are you talking to?</div>
+      <div class="step-head">Gatekeeper Info</div>
       <div class="step-sub">Enter the contact's details.</div>
       <div class="field-row">
         <div class="field"><label>First name</label><input type="text" id="fn" placeholder=""></div>
-        <div class="field"><label>Last name</label><input type="text" id="ln" placeholder=""></div>
+        <div class="field"><label>Last Initial</label><input type="text" id="ln" placeholder=""></div>
       </div>
       <div class="field"><label>Phone</label><input type="tel" id="ph" placeholder=""></div>
       <div class="field"><label>Email</label><input type="email" id="em" placeholder=""></div>
@@ -291,7 +312,8 @@ async function submitLead() {
     street: v('st'), unit: v('un'), city: v('ci'),
     state: v('sa'), zip: v('zp'),
     leadHeat: rating,
-    topics: [...document.querySelectorAll('.tag.on')].map(t=>t.textContent).join(', '),
+    topics: [...document.querySelectorAll('#topicTags .tag.on')].map(t=>t.textContent).join(', '),
+    flyerTypes: getFlyerData(),
     notes: v('nt')
   };
   const addr = [payload.street,payload.city,payload.state,payload.zip].filter(Boolean).join(', ') || '—';
@@ -329,6 +351,32 @@ async function submitLead() {
   }
 }
 
+function togFlyer(el, key) {
+  el.classList.toggle('on');
+  if (key === 'hn') {
+    const show = el.classList.contains('on');
+    document.getElementById('hn-count').style.display = show ? 'flex' : 'none';
+    if (!show) document.getElementById('hn-qty').value = '';
+  }
+  if (key === 'bts') {
+    const show = el.classList.contains('on');
+    document.getElementById('bts-count').style.display = show ? 'flex' : 'none';
+    if (!show) document.getElementById('bts-qty').value = '';
+  }
+}
+
+function getFlyerData() {
+  const tags = [...document.querySelectorAll('#flyerTags .tag.on')].map(t => t.textContent);
+  const hnQty = document.getElementById('hn-qty').value;
+  const btsQty = document.getElementById('bts-qty').value;
+  const parts = tags.map(t => {
+    if (t === 'Hey Neighbor' && hnQty) return `Hey Neighbor (${hnQty})`;
+    if (t === 'Back to School Offer' && btsQty) return `Back to School Offer (${btsQty})`;
+    return t;
+  });
+  return parts.join(', ');
+}
+
 function resetForm() {
   ['bn','fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('lt').value = '';
@@ -336,6 +384,10 @@ function resetForm() {
   document.getElementById('rl').value = '';
   resetMicUI();
   document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
+  document.getElementById('hn-count').style.display = 'none';
+  document.getElementById('bts-count').style.display = 'none';
+  document.getElementById('hn-qty').value = '';
+  document.getElementById('bts-qty').value = '';
   document.querySelectorAll('.drop-btn').forEach(b => b.classList.remove('lit'));
   const btn = document.getElementById('submitBtn');
   btn.disabled = false; btn.textContent = 'Submit lead';
