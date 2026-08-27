@@ -102,21 +102,22 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
         <label>Saucy! Restaurant Location</label>
         <select id="rl">
           <option value="">Select location…</option>
-          <option>Winter Park</option>
-          <option>Colonial Drive</option>
           <option>Alafaya</option>
-          <option>John Young Parkway</option>
           <option>Altamonte Springs</option>
+          <option>Bradenton</option>
           <option>Carrollwood</option>
-          <option>West Tampa</option>
-          <option>Westchase</option>
+          <option>Colonial Drive</option>
+          <option>Flamingo Crossings</option>
+          <option>Gainesville</option>
+          <option>Jacksonville (Gate Parkway)</option>
+          <option>John Young Parkway</option>
+          <option>Naples</option>
+          <option>St. Johns</option>
           <option>Temple Terrace | USF</option>
           <option>Trinity</option>
-          <option>Bradenton</option>
-          <option>Naples</option>
-          <option>Gainesville</option>
-          <option>St. Johns</option>
-          <option>Jacksonville (Gate Parkway)</option>
+          <option>West Tampa</option>
+          <option>Westchase</option>
+          <option>Winter Park</option>
         </select>
       </div>
       <div class="step-head">Tell us about the opportunity</div>
@@ -201,6 +202,22 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;min-height
           <span id="interimText" style="font-size:12px;color:#aaa;font-style:italic;min-height:16px;line-height:1.4;"></span>
         </div>
         <textarea id="nt" rows="4" placeholder=""></textarea>
+      </div>
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label style="margin-bottom:0;">Next Steps</label>
+          <button id="micBtn2" onclick="toggleRecording2()" style="display:flex;align-items:center;gap:5px;background:none;border:0.5px solid #ddd;border-radius:20px;padding:5px 11px;font-size:12px;color:#888;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+            <span id="micIcon2">🎙</span><span id="micLabel2">Record</span>
+          </button>
+        </div>
+        <div id="recStatus2" style="display:none;flex-direction:column;gap:6px;background:rgba(239,38,142,0.07);border:0.5px solid var(--pink);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--pink);display:inline-block;animation:pulse 1s infinite;flex-shrink:0;"></span>
+            <span style="font-size:12px;color:var(--pink-dark);font-weight:600;" id="recTimer2">Listening…</span>
+          </div>
+          <span id="interimText2" style="font-size:12px;color:#aaa;font-style:italic;min-height:16px;line-height:1.4;"></span>
+        </div>
+        <textarea id="ns" rows="4" placeholder=""></textarea>
       </div>
       <div style="margin-top:8px;">
         <button class="btn-p" onclick="goStep1()">Continue →</button>
@@ -314,7 +331,8 @@ async function submitLead() {
     leadHeat: rating,
     topics: [...document.querySelectorAll('#topicTags .tag.on')].map(t=>t.textContent).join(', '),
     flyerTypes: getFlyerData(),
-    notes: v('nt')
+    notes: v('nt'),
+    nextSteps: v('ns')
   };
   const addr = [payload.street,payload.city,payload.state,payload.zip].filter(Boolean).join(', ') || '—';
   const heatStr = rating ? '<span style="color:var(--pink)">●</span>'.repeat(rating) : '—';
@@ -377,12 +395,69 @@ function getFlyerData() {
   return parts.join(', ');
 }
 
+// Speech-to-text for Next Steps
+let recognition2 = null;
+let isListening2 = false;
+
+function toggleRecording2() {
+  if (isListening2) { stopSpeech2(); } else { startSpeech2(); }
+}
+
+function startSpeech2() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Speech recognition is not supported in this browser. Please try Chrome or Safari.');
+    return;
+  }
+  recognition2 = new SpeechRecognition();
+  recognition2.lang = 'en-US';
+  recognition2.continuous = true;
+  recognition2.interimResults = true;
+  const textarea = document.getElementById('ns');
+  const existingText = textarea.value;
+  recognition2.onstart = () => {
+    isListening2 = true;
+    document.getElementById('micBtn2').classList.add('mic-active');
+    document.getElementById('micIcon2').textContent = '⏹';
+    document.getElementById('micLabel2').textContent = 'Stop';
+    document.getElementById('recStatus2').style.display = 'flex';
+    document.getElementById('recTimer2').textContent = 'Listening…';
+  };
+  recognition2.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) { final += e.results[i][0].transcript; }
+      else { interim += e.results[i][0].transcript; }
+    }
+    if (final) {
+      const prefix = existingText && !existingText.endsWith(' ') && !existingText.endsWith('\n') ? ' ' : '';
+      textarea.value = existingText + prefix + final;
+    }
+    document.getElementById('interimText2').textContent = interim;
+  };
+  recognition2.onerror = (e) => { if (e.error !== 'aborted') alert('Mic error: ' + e.error); resetMicUI2(); };
+  recognition2.onend = () => { resetMicUI2(); };
+  recognition2.start();
+}
+
+function stopSpeech2() { if (recognition2) recognition2.stop(); resetMicUI2(); }
+
+function resetMicUI2() {
+  isListening2 = false; recognition2 = null;
+  document.getElementById('micBtn2').classList.remove('mic-active');
+  document.getElementById('micIcon2').textContent = '🎙';
+  document.getElementById('micLabel2').textContent = 'Record';
+  document.getElementById('recStatus2').style.display = 'none';
+  document.getElementById('interimText2').textContent = '';
+}
+
 function resetForm() {
-  ['bn','fn','ln','ph','em','st','un','ci','sa','zp','nt'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['bn','fn','ln','ph','em','st','un','ci','sa','zp','nt','ns'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('lt').value = '';
   document.getElementById('mm').value = '';
   document.getElementById('rl').value = '';
   resetMicUI();
+  resetMicUI2();
   document.querySelectorAll('.tag').forEach(t => t.classList.remove('on'));
   document.getElementById('hn-count').style.display = 'none';
   document.getElementById('bts-count').style.display = 'none';
@@ -465,10 +540,12 @@ function startSpeech() {
       alert('Mic error: ' + e.error + '. Please allow microphone access.');
     }
     resetMicUI();
+  resetMicUI2();
   };
 
   recognition.onend = () => {
     resetMicUI();
+  resetMicUI2();
   };
 
   recognition.start();
@@ -477,6 +554,7 @@ function startSpeech() {
 function stopSpeech() {
   if (recognition) recognition.stop();
   resetMicUI();
+  resetMicUI2();
 }
 
 function resetMicUI() {
